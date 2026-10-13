@@ -1,0 +1,151 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block object-tools %}
+  <div style="background: #1e1e2d; border: 1px solid #2d2d3f; border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; color: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 16px;">
+      <div>
+        <h2 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+          🎟️ Real-Time Ticket Booking Dashboard
+          <span id="live-indicator" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e; animation: pulse 2s infinite;"></span>
+        </h2>
+        <p style="margin: 4px 0 0; font-size: 0.85rem; color: #94a3b8;">
+          Monitor incoming ticket reservations, confirmed bookings, and pending payments in real-time.
+        </p>
+      </div>
+
+      <!-- Auto Refresh Controls -->
+      <div style="display: flex; align-items: center; gap: 10px; background: #13131f; padding: 8px 14px; border-radius: 8px; border: 1px solid #33334d;">
+        <label for="auto-refresh-select" style="font-size: 0.85rem; color: #cbd5e1; font-weight: 500; margin: 0;">⏱️ Auto-Refresh:</label>
+        <select id="auto-refresh-select" style="background: #1e1e2f; color: #fff; border: 1px solid #4a4a68; border-radius: 6px; padding: 4px 8px; font-size: 0.85rem;">
+          <option value="0">Off (Manual)</option>
+          <option value="10">Every 10 seconds</option>
+          <option value="20" selected>Every 20 seconds</option>
+          <option value="45">Every 45 seconds</option>
+        </select>
+        <button type="button" id="manual-refresh-btn" style="background: #dc2626; color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+          ⟳ Refresh Now
+        </button>
+        <span id="refresh-timer-display" style="font-size: 0.8rem; color: #f59e0b; font-family: monospace;"></span>
+      </div>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+      <!-- Confirmed / Booked -->
+      <div style="background: linear-gradient(135deg, rgba(22, 101, 52, 0.35), rgba(20, 83, 45, 0.15)); border: 1px solid #16a34a; border-radius: 10px; padding: 14px 16px;">
+        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #86efac; font-weight: 600;">
+          🟢 Confirmed Bookings
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #4ade80; margin-top: 4px;">
+          {{ stats.confirmed_count }}
+        </div>
+        <div style="font-size: 0.75rem; color: #bbf7d0; margin-top: 2px;">
+          Seats locked & confirmed
+        </div>
+      </div>
+
+      <!-- Pending -->
+      <div style="background: linear-gradient(135deg, rgba(161, 98, 7, 0.35), rgba(133, 77, 14, 0.15)); border: 1px solid #eab308; border-radius: 10px; padding: 14px 16px;">
+        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #fde047; font-weight: 600;">
+          🟡 Pending Verification
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #facc15; margin-top: 4px;">
+          {{ stats.pending_count }}
+        </div>
+        <div style="font-size: 0.75rem; color: #fef08a; margin-top: 2px;">
+          Awaiting confirmation / payment
+        </div>
+      </div>
+
+      <!-- Cancelled -->
+      <div style="background: linear-gradient(135deg, rgba(153, 27, 27, 0.35), rgba(127, 29, 29, 0.15)); border: 1px solid #dc2626; border-radius: 10px; padding: 14px 16px;">
+        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #fca5a5; font-weight: 600;">
+          🔴 Cancelled / Released
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #f87171; margin-top: 4px;">
+          {{ stats.cancelled_count }}
+        </div>
+        <div style="font-size: 0.75rem; color: #fecaca; margin-top: 2px;">
+          Seats released back to theater
+        </div>
+      </div>
+
+      <!-- Revenue -->
+      <div style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(30, 64, 175, 0.15)); border: 1px solid #3b82f6; border-radius: 10px; padding: 14px 16px;">
+        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #93c5fd; font-weight: 600;">
+          💰 Total Confirmed Revenue
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #60a5fa; margin-top: 4px;">
+          ₹{{ stats.total_revenue|floatformat:0 }}
+        </div>
+        <div style="font-size: 0.75rem; color: #bfdbfe; margin-top: 2px;">
+          From active bookings
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.15); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+  </style>
+
+  <script>
+    (function() {
+      const select = document.getElementById("auto-refresh-select");
+      const btn = document.getElementById("manual-refresh-btn");
+      const timerDisplay = document.getElementById("refresh-timer-display");
+      const indicator = document.getElementById("live-indicator");
+
+      const saved = localStorage.getItem("cinehub_admin_refresh_rate");
+      if (saved !== null && select) {
+        select.value = saved;
+      }
+
+      let intervalId = null;
+      let countdown = 0;
+
+      function startTimer() {
+        if (intervalId) clearInterval(intervalId);
+        const seconds = parseInt(select.value, 10);
+        if (seconds <= 0) {
+          timerDisplay.textContent = "";
+          indicator.style.animation = "none";
+          indicator.style.background = "#6b7280";
+          return;
+        }
+        indicator.style.animation = "pulse 2s infinite";
+        indicator.style.background = "#22c55e";
+        countdown = seconds;
+        timerDisplay.textContent = `(${countdown}s)`;
+
+        intervalId = setInterval(() => {
+          countdown--;
+          if (countdown <= 0) {
+            timerDisplay.textContent = "(refreshing...)";
+            window.location.reload();
+          } else {
+            timerDisplay.textContent = `(${countdown}s)`;
+          }
+        }, 1000);
+      }
+
+      select.addEventListener("change", () => {
+        localStorage.setItem("cinehub_admin_refresh_rate", select.value);
+        startTimer();
+      });
+
+      btn.addEventListener("click", () => {
+        window.location.reload();
+      });
+
+      startTimer();
+    })();
+  </script>
+
+  {{ block.super }}
+{% endblock %}

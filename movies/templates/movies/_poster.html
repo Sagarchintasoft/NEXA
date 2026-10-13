@@ -1,0 +1,4 @@
+<div class="poster poster-{{ movie.industry }}">
+  {% if movie.poster_url %}<img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster" loading="lazy" onerror="this.remove()">{% endif %}
+  <span class="poster-title">{{ movie.title }}</span>
+</div>

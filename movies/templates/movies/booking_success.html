@@ -1,0 +1,16 @@
+{% extends "movies/base.html" %}
+{% block title %}Booking confirmed{% endblock %}
+{% block content %}
+<div class="mx-auto" style="max-width:560px">
+  <div class="text-center mb-4"><div class="display-3">🎟️</div><h1 class="h3">Booking confirmed!</h1></div>
+  <div class="ticket rounded-4 p-4">
+    <div class="h5">{{ booking.showtime.movie.title }}</div>
+    <div class="text-secondary mb-3">{{ booking.showtime.show_date|date:"D, d M Y" }} · {{ booking.showtime.show_time|time:"h:i A" }} · Screen {{ booking.showtime.screen_number }}</div>
+    <div class="row mb-2"><div class="col-4 text-secondary">Booking ID</div><div class="col-8">#{{ booking.pk }}</div></div>
+    <div class="row mb-2"><div class="col-4 text-secondary">Name</div><div class="col-8">{{ booking.customer_name }}</div></div>
+    <div class="row mb-2"><div class="col-4 text-secondary">Seats</div><div class="col-8">{% for s in booking.seat_list %}<span class="badge text-bg-danger me-1">{{ s }}</span>{% endfor %}</div></div>
+    <div class="row"><div class="col-4 text-secondary">Total paid</div><div class="col-8 fw-bold">₹{{ booking.total_paid|floatformat:2 }}</div></div>
+  </div>
+  <div class="text-center mt-4"><a class="btn btn-outline-light" href="{% url 'movie_list' %}">Back to movies</a></div>
+</div>
+{% endblock %}
