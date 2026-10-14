@@ -38,7 +38,7 @@
       {% endfor %}
       <a id="book-btn" class="btn btn-danger btn-lg disabled" href="#" aria-disabled="true">Select a showtime</a>
     {% else %}
-      <div class="alert alert-secondary">{% if movie.in_theatres %}No upcoming showtimes right now.{% else %}This movie is not running in theatres — see streaming options above.{% endif %}</div>
+      <div class="alert alert-secondary">{% if movie.is_upcoming %}Showtimes and advance booking are not available yet.{% elif movie.in_theatres %}No upcoming showtimes right now.{% else %}This movie is not running in theatres — see streaming options above.{% endif %}</div>
     {% endif %}
   </div>
 </div>

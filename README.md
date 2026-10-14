@@ -1,4 +1,4 @@
-# CineHub - Movie Ticket Booking, Reviews & OTT Search (Django + SQLite)
+# NEXAFILCK - Movie Ticket Booking, Reviews & OTT Search (Django + SQLite)
 
 Tollywood, Bollywood and Hollywood movies, 5x8 seat booking, 1-5 star reviews and an OTT streaming search engine.
 
@@ -9,7 +9,7 @@ source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py makemigrations movies
 python manage.py migrate
-python manage.py seed_movies      # 36 movies + OTT data + showtimes + reviews
+python manage.py seed_movies      # sample movies + posters + OTT data + showtimes + reviews
 python manage.py createsuperuser
 python manage.py runserver
 ```
@@ -26,4 +26,6 @@ SQLite on Render's free tier is ephemeral: data resets on redeploy/restart. The 
 
 ## Notes
 - OTT availability is sample data (it changes often) - edit it under Admin -> Movies -> OTT availability.
-- Optional: paste a poster image URL in Admin; otherwise a coloured title poster is shown.
+- Edit Now Running and Upcoming Movies flags, release dates, showtimes, and poster URLs under Admin -> Movies.
+- Upload a poster image in Admin or use a direct poster URL; the uploaded image takes priority.
+- New ticket bookings start as Pending. In Admin -> Seat bookings, staff can mark tickets Booked / Confirmed, leave them Pending, or Cancel them. Cancelled seats become available again.

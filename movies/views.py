@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, Exists, OuterRef, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -13,14 +13,20 @@ from .models import (
 
 def movie_list(request):
     """Home page + OTT/theatre search engine (supports live AJAX filtering)."""
+    now = timezone.localtime()
     q = request.GET.get("q", "").strip()
     industry = request.GET.get("industry", "")
     genre = request.GET.get("genre", "")
     platform = request.GET.get("platform", "")
     show = request.GET.get("show", "")
 
+    upcoming_showtimes = Showtime.objects.filter(movie_id=OuterRef("pk")).filter(
+        Q(show_date__gt=now.date()) | Q(show_date=now.date(), show_time__gt=now.time())
+    )
     qs = Movie.objects.annotate(
-        avg_rating=Avg("reviews__rating"), review_count=Count("reviews")
+        avg_rating=Avg("reviews__rating"),
+        review_count=Count("reviews"),
+        has_showtimes=Exists(upcoming_showtimes),
     ).prefetch_related("streams")
 
     if q:
@@ -38,7 +44,9 @@ def movie_list(request):
     if platform in dict(OTTAvailability.PLATFORMS):
         qs = qs.filter(id__in=OTTAvailability.objects.filter(platform=platform).values("movie_id"))
     if show == "theatres":
-        qs = qs.filter(in_theatres=True)
+        qs = qs.filter(in_theatres=True, release_date__lte=now.date())
+    elif show == "upcoming":
+        qs = qs.filter(is_upcoming=True, release_date__gt=now.date())
     elif show == "streaming":
         qs = qs.filter(id__in=OTTAvailability.objects.values("movie_id"))
 
@@ -51,8 +59,21 @@ def movie_list(request):
     used_platforms = (
         OTTAvailability.objects.order_by("platform").values_list("platform", flat=True).distinct()
     )
+    show_sections = not any((q, industry, genre, platform, show))
+    section_movies = Movie.objects.annotate(
+        avg_rating=Avg("reviews__rating"),
+        review_count=Count("reviews"),
+        has_showtimes=Exists(upcoming_showtimes),
+    ).prefetch_related("streams")
     return render(request, "movies/movie_list.html", {
         "movies": movies,
+        "show_sections": show_sections,
+        "now_running_movies": section_movies.filter(
+            in_theatres=True, release_date__lte=now.date()
+        ),
+        "upcoming_movies": section_movies.filter(
+            is_upcoming=True, release_date__gt=now.date()
+        ),
         "industries": Movie.INDUSTRIES,
         "genres": all_genres,
         "platforms": used_platforms,
@@ -76,9 +97,11 @@ def movie_detail(request, pk):
         form = ReviewForm()
 
     now = timezone.localtime()
-    showtimes = movie.showtimes.filter(
-        Q(show_date__gt=now.date()) | Q(show_date=now.date(), show_time__gt=now.time())
-    )
+    showtimes = movie.showtimes.none()
+    if movie.in_theatres or movie.is_upcoming:
+        showtimes = movie.showtimes.filter(
+            Q(show_date__gt=now.date()) | Q(show_date=now.date(), show_time__gt=now.time())
+        )
     return render(request, "movies/movie_detail.html", {
         "movie": movie,
         "showtimes": showtimes,
@@ -90,6 +113,8 @@ def movie_detail(request, pk):
 
 def book_seats(request, showtime_id):
     showtime = get_object_or_404(Showtime.objects.select_related("movie"), pk=showtime_id)
+    if not showtime.movie.in_theatres and not showtime.movie.is_upcoming:
+        raise Http404
 
     if request.method == "POST":
         # Validation (including the duplicate-seat check) and the insert run in one
@@ -105,6 +130,7 @@ def book_seats(request, showtime_id):
                     customer_phone=form.cleaned_data["customer_phone"],
                     seats=",".join(seats),
                     total_paid=showtime.ticket_price * len(seats),  # price computed on the server
+                    status=SeatBooking.STATUS_PENDING,
                 )
                 mine = request.session.get("my_bookings", [])
                 request.session["my_bookings"] = mine + [booking.pk]

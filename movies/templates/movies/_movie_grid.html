@@ -8,16 +8,17 @@
         <h6 class="card-title mb-1"><a class="text-decoration-none text-reset" href="{{ movie.get_absolute_url }}">{{ movie.title }}</a></h6>
         <div class="mb-1">
           <span class="badge badge-{{ movie.industry }}">{{ movie.industry }}</span>
-          {% if movie.in_theatres %}<span class="badge text-bg-danger">In theatres</span>{% endif %}
+          {% if movie.in_theatres %}<span class="badge text-bg-danger">Now running</span>{% elif movie.is_upcoming %}<span class="badge text-bg-info">Upcoming</span>{% endif %}
         </div>
-        <div class="small text-secondary">{{ movie.genre }} · {{ movie.duration_display }}</div>
+        <div class="small text-secondary">{{ movie.release_date|date:"d M Y" }} · {{ movie.genre }}</div>
+        <div class="small text-secondary">{{ movie.duration_display }}</div>
         <div class="small mt-1 text-warning">
           {% if movie.avg_rating %}★ {{ movie.avg_rating|floatformat:1 }} <span class="text-secondary">({{ movie.review_count }})</span>{% else %}<span class="text-secondary">No ratings yet</span>{% endif %}
         </div>
         <div class="mt-2 d-flex flex-wrap gap-1">
           {% for s in movie.streams.all %}<a href="{{ s.watch_url }}" target="_blank" rel="noopener" class="badge rounded-pill text-bg-secondary text-decoration-none" title="{{ s.access }}">▶ {{ s.platform }}</a>{% endfor %}
         </div>
-        <a href="{{ movie.get_absolute_url }}" class="btn btn-sm {% if movie.in_theatres %}btn-danger{% else %}btn-outline-light{% endif %} mt-auto">{% if movie.in_theatres %}Book tickets{% else %}Details{% endif %}</a>
+        <a href="{{ movie.get_absolute_url }}" class="btn btn-sm {% if movie.has_showtimes %}btn-danger{% else %}btn-outline-light{% endif %} mt-auto">{% if movie.has_showtimes %}Book tickets{% else %}Details{% endif %}</a>
       </div>
     </div>
   </div>

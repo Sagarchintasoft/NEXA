@@ -3,8 +3,8 @@
 {% block title %}Movies{% endblock %}
 {% block content %}
 <section class="hero rounded-4 p-4 p-md-5 mb-4">
-  <h1 class="display-6 fw-bold">Book tickets. Find where to stream.</h1>
-  <p class="lead text-secondary mb-4">Tollywood, Bollywood &amp; Hollywood — in theatres now, or on Netflix, Prime Video, JioHotstar, ZEE5 and more.</p>
+  <h1 class="display-6 fw-bold">Find your next movie night.</h1>
+  <p class="lead text-secondary mb-4">Now running, coming soon, and streaming across Tollywood, Kollywood, Bollywood and Hollywood.</p>
   <form id="filter-form" method="get" class="row g-2">
     <div class="col-12 col-lg-4"><input type="search" name="q" value="{{ f.q }}" class="form-control form-control-lg" placeholder="Search title, genre, language or OTT (e.g. Netflix)" autocomplete="off"></div>
     <div class="col-6 col-lg-2">
@@ -22,11 +22,31 @@
     <div class="col-6 col-lg-2">
       <select name="show" class="form-select form-select-lg">
         <option value="">Everything</option>
-        <option value="theatres" {% if f.show == 'theatres' %}selected{% endif %}>In theatres</option>
+        <option value="theatres" {% if f.show == 'theatres' %}selected{% endif %}>Now running</option>
+        <option value="upcoming" {% if f.show == 'upcoming' %}selected{% endif %}>Upcoming</option>
         <option value="streaming" {% if f.show == 'streaming' %}selected{% endif %}>Streaming</option>
       </select></div>
   </form>
 </section>
-<div id="results">{% include "movies/_movie_grid.html" %}</div>
+<div id="results">
+  {% if show_sections %}
+    <section class="movie-section mb-5">
+      <div class="d-flex align-items-end justify-content-between gap-3 mb-3">
+        <div><p class="section-kicker mb-1">ON THE BIG SCREEN</p><h2 class="h3 mb-0">Now Running</h2></div>
+        <a href="?show=theatres" class="small text-decoration-none">View all</a>
+      </div>
+      {% include "movies/_movie_grid.html" with movies=now_running_movies %}
+    </section>
+    <section class="movie-section mb-4">
+      <div class="d-flex align-items-end justify-content-between gap-3 mb-3">
+        <div><p class="section-kicker mb-1">COMING SOON</p><h2 class="h3 mb-0">Upcoming Movies</h2></div>
+        <a href="?show=upcoming" class="small text-decoration-none">View all</a>
+      </div>
+      {% include "movies/_movie_grid.html" with movies=upcoming_movies %}
+    </section>
+  {% else %}
+    {% include "movies/_movie_grid.html" %}
+  {% endif %}
+</div>
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/search.js' %}"></script>{% endblock %}

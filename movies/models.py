@@ -21,6 +21,7 @@ PLATFORM_URLS = {
 class Movie(models.Model):
     INDUSTRIES = [
         ("Tollywood", "Tollywood (Telugu)"),
+        ("Kollywood", "Kollywood (Tamil)"),
         ("Bollywood", "Bollywood (Hindi)"),
         ("Hollywood", "Hollywood (English)"),
     ]
@@ -30,13 +31,25 @@ class Movie(models.Model):
     genre = models.CharField(max_length=120, help_text="Comma separated, e.g. Action, Drama")
     duration = models.PositiveIntegerField(help_text="Duration in minutes")
     release_date = models.DateField()
-    poster_url = models.URLField(max_length=500, blank=True)
-    poster_image = models.ImageField(upload_to="posters/", blank=True, null=True, help_text="Upload local poster image or leave blank to use poster_url")
-    trailer_url = models.URLField(max_length=500, blank=True, help_text="YouTube trailer or teaser link")
-    expected_release = models.CharField(max_length=100, blank=True, help_text="e.g. Summer 2026, Diwali 2026")
-    description = models.TextField()
-    in_theatres = models.BooleanField(default=False, help_text="Show in 'Now Running' section and allow seat booking")
+    poster_url = models.URLField(blank=True, max_length=500)
+    poster_image = models.ImageField(
+        upload_to="posters/",
+        blank=True,
+        null=True,
+        help_text="Upload local poster image or leave blank to use poster_url",
+    )
+    expected_release = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="e.g. Summer 2026, Diwali 2026",
+    )
     is_upcoming = models.BooleanField(default=False, help_text="Show in 'Upcoming Movies' section")
+    trailer_url = models.URLField(blank=True, max_length=500, help_text="YouTube trailer or teaser link")
+    description = models.TextField()
+    in_theatres = models.BooleanField(
+        default=False,
+        help_text="Show in 'Now Running' section and allow seat booking",
+    )
 
     class Meta:
         ordering = ["-release_date", "title"]
@@ -47,23 +60,6 @@ class Movie(models.Model):
 
     def get_absolute_url(self):
         return reverse("movie_detail", args=[self.pk])
-
-    @property
-    def poster(self):
-        if self.poster_image:
-            try:
-                return self.poster_image.url
-            except Exception:
-                pass
-        return self.poster_url or ""
-
-    @property
-    def status_label(self):
-        if self.in_theatres:
-            return "Now Running"
-        if self.is_upcoming:
-            return "Upcoming"
-        return "Streaming"
 
     @property
     def genre_list(self):
@@ -116,16 +112,19 @@ class Showtime(models.Model):
 
     def booked_seats(self):
         taken = set()
-        for seats in self.bookings.exclude(status="CANCELLED").values_list("seats", flat=True):
+        for seats in self.bookings.exclude(status=SeatBooking.STATUS_CANCELLED).values_list("seats", flat=True):
             taken.update(s for s in seats.split(",") if s)
         return taken
 
 
 class SeatBooking(models.Model):
-    BOOKING_STATUS = [
-        ("CONFIRMED", "Booked / Confirmed"),
-        ("PENDING", "Pending"),
-        ("CANCELLED", "Cancelled"),
+    STATUS_CONFIRMED = "CONFIRMED"
+    STATUS_PENDING = "PENDING"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_CHOICES = [
+        (STATUS_CONFIRMED, "Booked / Confirmed"),
+        (STATUS_PENDING, "Pending"),
+        (STATUS_CANCELLED, "Cancelled"),
     ]
 
     showtime = models.ForeignKey(Showtime, on_delete=models.CASCADE, related_name="bookings")
@@ -134,7 +133,7 @@ class SeatBooking(models.Model):
     customer_phone = models.CharField(max_length=15)
     seats = models.CharField(max_length=200, help_text="Comma separated, e.g. A1,A2,B5")
     total_paid = models.DecimalField(max_digits=9, decimal_places=2)
-    status = models.CharField(max_length=20, choices=BOOKING_STATUS, default="CONFIRMED")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_CONFIRMED)
     booked_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -142,15 +141,11 @@ class SeatBooking(models.Model):
         ordering = ["-booked_at"]
 
     def __str__(self):
-        return f"#{self.pk} [{self.get_status_display()}] {self.customer_name} - {self.seats}"
+        return f"#{self.pk} {self.customer_name} - {self.seats}"
 
     @property
     def seat_list(self):
         return [s for s in self.seats.split(",") if s]
-
-    @property
-    def seat_count(self):
-        return len(self.seat_list)
 
 
 class MovieReview(models.Model):

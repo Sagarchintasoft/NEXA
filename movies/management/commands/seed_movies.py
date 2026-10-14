@@ -1,10 +1,10 @@
-"""Idempotent sample data: Tollywood + Bollywood + Hollywood movies, OTT availability,
-upcoming showtimes (refreshed every run) and a few reviews.
+"""Idempotent sample data: movies, poster links, OTT availability, showtimes and reviews.
 
 OTT availability changes often - treat it as sample data and edit it in /admin/."""
 from datetime import date, time, timedelta
 
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 
 from movies.models import Movie, MovieReview, OTTAvailability, Showtime
 
@@ -16,15 +16,15 @@ MOVIES = [
     ("RRR", "Tollywood", "Telugu", "Action, Drama", 187, date(2022, 3, 25),
      "Two revolutionaries, Alluri Sitarama Raju and Komaram Bheem, forge an epic friendship in pre-independence India.", False, [(N, "Subscription"), (Z, "Subscription")]),
     ("Pushpa 2: The Rule", "Tollywood", "Telugu", "Action, Crime", 200, date(2024, 12, 5),
-     "Pushpa Raj faces off with the system and old enemies as his red sanders empire grows.", True, [(N, "Subscription")]),
+        "Pushpa Raj faces off with the system and old enemies as his red sanders empire grows.", False, [(N, "Subscription")]),
     ("Pushpa: The Rise", "Tollywood", "Telugu", "Action, Crime", 179, date(2021, 12, 17),
      "A labourer rises through the red sandalwood smuggling syndicate of Seshachalam.", False, [(P, "Subscription")]),
     ("Kalki 2898 AD", "Tollywood", "Telugu", "Sci-Fi, Action", 181, date(2024, 6, 27),
-     "A futuristic mythological epic where a bounty hunter gets drawn into the fate of the world's last city.", True, [(P, "Subscription"), (N, "Subscription")]),
+        "A futuristic mythological epic where a bounty hunter gets drawn into the fate of the world's last city.", False, [(P, "Subscription"), (N, "Subscription")]),
     ("Salaar: Part 1 - Ceasefire", "Tollywood", "Telugu", "Action, Thriller", 175, date(2023, 12, 22),
-     "Two friends turn bitter rivals in the violent, fictional city-state of Khansaar.", True, [(N, "Subscription"), (H, "Subscription")]),
+        "Two friends turn bitter rivals in the violent, fictional city-state of Khansaar.", False, [(N, "Subscription"), (H, "Subscription")]),
     ("Devara: Part 1", "Tollywood", "Telugu", "Action, Drama", 178, date(2024, 9, 27),
-     "A coastal-land fearless leader fights to keep smugglers away from the sea.", True, [(N, "Subscription")]),
+        "A coastal-land fearless leader fights to keep smugglers away from the sea.", False, [(N, "Subscription")]),
     ("HanuMan", "Tollywood", "Telugu", "Fantasy, Action", 158, date(2024, 1, 12),
      "An ordinary man gains the powers of Lord Hanuman and must defend his village.", False, [(Z, "Subscription"), (H, "Subscription")]),
     ("Sita Ramam", "Tollywood", "Telugu", "Romance, Drama", 163, date(2022, 8, 5),
@@ -39,17 +39,17 @@ MOVIES = [
      "A modest bank cashier gets entangled in a high-stakes money scheme in 1990s Bombay.", False, [(N, "Subscription")]),
     # ---------------- Bollywood ----------------
     ("Jawan", "Bollywood", "Hindi", "Action, Thriller", 169, date(2023, 9, 7),
-     "A man driven by a personal vendetta sets out to right the wrongs of society.", True, [(N, "Subscription")]),
+        "A man driven by a personal vendetta sets out to right the wrongs of society.", False, [(N, "Subscription")]),
     ("Pathaan", "Bollywood", "Hindi", "Action, Spy", 146, date(2023, 1, 25),
      "An exiled Indian agent returns to take on a private terror group.", False, [(P, "Subscription")]),
     ("Animal", "Bollywood", "Hindi", "Action, Crime", 201, date(2023, 12, 1),
      "A son's obsessive love for his father spirals into violence and vengeance.", False, [(N, "Subscription")]),
     ("Stree 2", "Bollywood", "Hindi", "Horror, Comedy", 147, date(2024, 8, 15),
-     "The town of Chanderi faces a new, headless terror and the gang must save it again.", True, [(P, "Subscription")]),
+        "The town of Chanderi faces a new, headless terror and the gang must save it again.", False, [(P, "Subscription")]),
     ("Chhaava", "Bollywood", "Hindi", "Historical, Action", 161, date(2025, 2, 14),
-     "The story of Chhatrapati Sambhaji Maharaj, successor of Shivaji.", True, [(N, "Subscription")]),
+        "The story of Chhatrapati Sambhaji Maharaj, successor of Shivaji.", False, [(N, "Subscription")]),
     ("Saiyaara", "Bollywood", "Hindi", "Romance, Drama", 156, date(2025, 7, 18),
-     "A troubled musician and a shy lyricist find love and music together.", True, [(N, "Subscription")]),
+        "A troubled musician and a shy lyricist find love and music together.", False, [(N, "Subscription")]),
     ("Dangal", "Bollywood", "Hindi", "Biography, Sport", 161, date(2016, 12, 23),
      "Mahavir Singh Phogat trains his daughters to become world-class wrestlers.", False, [(H, "Subscription")]),
     ("3 Idiots", "Bollywood", "Hindi", "Comedy, Drama", 170, date(2009, 12, 25),
@@ -66,9 +66,9 @@ MOVIES = [
     ("Avengers: Endgame", "Hollywood", "English", "Superhero, Action", 181, date(2019, 4, 26),
      "The Avengers assemble one last time to undo Thanos's snap.", False, [(H, "Subscription")]),
     ("Avatar: The Way of Water", "Hollywood", "English", "Sci-Fi, Adventure", 192, date(2022, 12, 16),
-     "Jake Sully and his family flee to the reef clans of Pandora as an old threat returns.", True, [(H, "Subscription")]),
+        "Jake Sully and his family flee to the reef clans of Pandora as an old threat returns.", False, [(H, "Subscription")]),
     ("Spider-Man: No Way Home", "Hollywood", "English", "Superhero, Action", 148, date(2021, 12, 17),
-     "Peter Parker asks Doctor Strange for help and opens the multiverse.", True, [(N, "Subscription")]),
+        "Peter Parker asks Doctor Strange for help and opens the multiverse.", False, [(N, "Subscription")]),
     ("The Dark Knight", "Hollywood", "English", "Action, Crime", 152, date(2008, 7, 18),
      "Batman faces the Joker, a criminal mastermind who wants to plunge Gotham into chaos.", False, [(H, "Subscription")]),
     ("Inception", "Hollywood", "English", "Sci-Fi, Thriller", 148, date(2010, 7, 16),
@@ -78,9 +78,9 @@ MOVIES = [
     ("Oppenheimer", "Hollywood", "English", "Biography, Drama", 180, date(2023, 7, 21),
      "The story of J. Robert Oppenheimer and the creation of the atomic bomb.", False, [(P, "Rent")]),
     ("Dune: Part Two", "Hollywood", "English", "Sci-Fi, Adventure", 166, date(2024, 3, 1),
-     "Paul Atreides unites with the Fremen to avenge his family and prevent a terrible future.", True, [(H, "Subscription")]),
+        "Paul Atreides unites with the Fremen to avenge his family and prevent a terrible future.", False, [(H, "Subscription")]),
     ("Deadpool & Wolverine", "Hollywood", "English", "Superhero, Comedy", 128, date(2024, 7, 26),
-     "Deadpool is recruited by the TVA and teams up with a reluctant Wolverine.", True, [(H, "Subscription")]),
+        "Deadpool is recruited by the TVA and teams up with a reluctant Wolverine.", False, [(H, "Subscription")]),
     ("Barbie", "Hollywood", "English", "Comedy, Fantasy", 114, date(2023, 7, 21),
      "Barbie leaves Barbieland for the real world and discovers what it means to be human.", False, [(H, "Subscription")]),
     ("Joker", "Hollywood", "English", "Crime, Drama", 122, date(2019, 10, 4),
@@ -88,6 +88,85 @@ MOVIES = [
     ("Top Gun: Maverick", "Hollywood", "English", "Action, Drama", 130, date(2022, 5, 27),
      "After 30 years, Maverick trains a new generation of pilots for a near-impossible mission.", False, [(H, "Subscription")]),
 ]
+
+FEATURED_MOVIES = [
+    {
+        "title": "Comrade Kalyan",
+        "industry": "Tollywood",
+        "language": "Telugu",
+        "genre": "Action, Drama",
+        "duration": 150,
+        "release_date": date(2026, 10, 9),
+        "description": "A Telugu action drama set on the Andhra-Odisha border in 1992, starring Sree Vishnu and Mahima Nambiar.",
+        "poster_url": "https://media.telanganatoday.com/wp-content/uploads/2026/08/Comrade-Kalyan.jpg",
+        "in_theatres": True,
+    },
+    {
+        "title": "Jailer 2",
+        "industry": "Kollywood",
+        "language": "Tamil",
+        "genre": "Action, Comedy",
+        "duration": 165,
+        "release_date": date(2026, 10, 15),
+        "description": "Muthuvel Pandian returns in Nelson Dilipkumar's action-comedy sequel, starring Rajinikanth.",
+        "poster_url": "https://upload.wikimedia.org/wikipedia/en/d/dc/Jailer_2_poster.jpg",
+        "expected_release": "15 October 2026",
+        "is_upcoming": True,
+    },
+    {
+        "title": "Ranabaali",
+        "industry": "Tollywood",
+        "language": "Telugu",
+        "genre": "Period, Action, Drama",
+        "duration": 155,
+        "release_date": date(2026, 10, 16),
+        "description": "A period action drama starring Vijay Deverakonda and Rashmika Mandanna, directed by Rahul Sankrityan.",
+        "poster_url": "https://img.youtube.com/vi/L7qEKA-e2qI/maxresdefault.jpg",
+        "trailer_url": "https://www.youtube.com/watch?v=L7qEKA-e2qI",
+        "expected_release": "16 October 2026",
+        "is_upcoming": True,
+    },
+]
+
+POSTER_URLS = {
+    "12th Fail": "https://img.youtube.com/vi/KjbtuqENvVE/maxresdefault.jpg",
+    "3 Idiots": "https://img.youtube.com/vi/_bEj7u3fxb8/maxresdefault.jpg",
+    "Ala Vaikunthapurramuloo": "https://img.youtube.com/vi/j8yZ9_OIvOU/maxresdefault.jpg",
+    "Animal": "https://img.youtube.com/vi/8FkLRUJj-o0/maxresdefault.jpg",
+    "Avatar: The Way of Water": "https://upload.wikimedia.org/wikipedia/en/5/54/Avatar_The_Way_of_Water_poster.jpg",
+    "Avengers: Endgame": "https://img.youtube.com/vi/TcMBFSGVi1c/maxresdefault.jpg",
+    "Baahubali 2: The Conclusion": "https://img.youtube.com/vi/qD-6d8Wo3do/maxresdefault.jpg",
+    "Bajrangi Bhaijaan": "https://img.youtube.com/vi/4nwAra0mz_Q/maxresdefault.jpg",
+    "Barbie": "https://img.youtube.com/vi/pBk4NYhWNMM/maxresdefault.jpg",
+    "Chhaava": "https://upload.wikimedia.org/wikipedia/en/7/75/Chhaava_film_poster.jpg",
+    "Dangal": "https://img.youtube.com/vi/x_7YlGv9u1g/maxresdefault.jpg",
+    "Deadpool & Wolverine": "https://upload.wikimedia.org/wikipedia/en/4/4c/Deadpool_%26_Wolverine_poster.jpg",
+    "Devara: Part 1": "https://upload.wikimedia.org/wikipedia/en/f/f0/Devara_Part_1.jpg",
+    "Dune: Part Two": "https://upload.wikimedia.org/wikipedia/en/5/52/Dune_Part_Two_poster.jpeg",
+    "Gully Boy": "https://img.youtube.com/vi/0_PiyAtKZkE/maxresdefault.jpg",
+    "HanuMan": "https://img.youtube.com/vi/Oqvly3MvlXA/maxresdefault.jpg",
+    "Inception": "https://img.youtube.com/vi/Qwe6qXFTdgc/maxresdefault.jpg",
+    "Interstellar": "https://img.youtube.com/vi/2LqzF5WauAw/maxresdefault.jpg",
+    "Jawan": "https://upload.wikimedia.org/wikipedia/en/3/39/Jawan_film_poster.jpg",
+    "Joker": "https://img.youtube.com/vi/KGwIjPky92s/maxresdefault.jpg",
+    "Kalki 2898 AD": "https://img.youtube.com/vi/Kg3PfNrXeOk/maxresdefault.jpg",
+    "Laapataa Ladies": "https://img.youtube.com/vi/hGM87LCJxRc/maxresdefault.jpg",
+    "Lucky Baskhar": "https://img.youtube.com/vi/FgQPvnjHQDk/maxresdefault.jpg",
+    "Mahanati": "https://img.youtube.com/vi/zRpzGIe8UzM/maxresdefault.jpg",
+    "Oppenheimer": "https://img.youtube.com/vi/H6-5UqQgImM/hqdefault.jpg",
+    "Pathaan": "https://img.youtube.com/vi/JGPHpUTYfPI/maxresdefault.jpg",
+    "Pushpa 2: The Rule": "https://upload.wikimedia.org/wikipedia/en/1/11/Pushpa_2-_The_Rule.jpg",
+    "Pushpa: The Rise": "https://img.youtube.com/vi/SvZXIBC1TA8/maxresdefault.jpg",
+    "Ranabaali": "https://img.youtube.com/vi/L7qEKA-e2qI/maxresdefault.jpg",
+    "RRR": "https://img.youtube.com/vi/CeprVMF8fcU/hqdefault.jpg",
+    "Saiyaara": "https://img.youtube.com/vi/9r-tT5IN0vg/maxresdefault.jpg",
+    "Salaar: Part 1 - Ceasefire": "https://img.youtube.com/vi/HwRBxAnHI9M/maxresdefault.jpg",
+    "Sita Ramam": "https://img.youtube.com/vi/EU6G0vgBYHU/hqdefault.jpg",
+    "Spider-Man: No Way Home": "https://upload.wikimedia.org/wikipedia/en/0/00/Spider-Man_No_Way_Home_poster.jpg",
+    "Stree 2": "https://upload.wikimedia.org/wikipedia/en/a/a1/Stree_2.jpg",
+    "The Dark Knight": "https://img.youtube.com/vi/_PZpmTj1Q8Q/maxresdefault.jpg",
+    "Top Gun: Maverick": "https://img.youtube.com/vi/qSqVVswa420/maxresdefault.jpg",
+}
 
 REVIEWS = [
     ("Ravi", 5, "Mass entertainment from start to end. Loved the visuals!"),
@@ -127,6 +206,40 @@ class Command(BaseCommand):
                 for name, rating, comment in REVIEWS[: 1 + i % 3]:
                     MovieReview.objects.create(movie=movie, reviewer_name=name, rating=rating, comment=comment)
 
+        featured_created = 0
+        for movie_data in FEATURED_MOVIES:
+            movie_data = movie_data.copy()
+            showtimes_start = max(today, movie_data["release_date"])
+            movie, was_new = Movie.objects.get_or_create(
+                title=movie_data["title"],
+                industry=movie_data["industry"],
+                defaults=movie_data,
+            )
+            featured_created += was_new
+            for day_offset, show_time in enumerate(SLOTS[:3]):
+                Showtime.objects.get_or_create(
+                    movie=movie,
+                    show_date=showtimes_start + timedelta(days=day_offset),
+                    show_time=show_time,
+                    screen_number=(movie.pk % 4) + 1,
+                    defaults={
+                        "ticket_price": PRICE.get(movie.industry, 220),
+                    },
+                )
+
+        posters_added = 0
+        for title, poster_url in POSTER_URLS.items():
+            posters_added += Movie.objects.filter(
+                title=title,
+                poster_url="",
+            ).filter(
+                Q(poster_image__isnull=True) | Q(poster_image=""),
+            ).update(poster_url=poster_url)
+        posters_added += Movie.objects.filter(
+            title="Ranabaali",
+            poster_url__contains="c.ndtvimg.com",
+        ).update(poster_url=POSTER_URLS["Ranabaali"])
+
         self.stdout.write(self.style.SUCCESS(
-            f"Seed complete: {Movie.objects.count()} movies ({created} new), "
-            f"{Showtime.objects.count()} showtimes."))
+            f"Seed complete: {Movie.objects.count()} movies ({created + featured_created} new), "
+            f"{Showtime.objects.count()} showtimes, {posters_added} posters added."))

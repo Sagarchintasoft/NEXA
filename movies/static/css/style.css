@@ -9,6 +9,12 @@ body { background: var(--cine-bg); }
 .poster-Tollywood { background: linear-gradient(160deg, #f7971e, #b4231f); }
 .poster-Bollywood { background: linear-gradient(160deg, #ec008c, #5b247a); }
 .poster-Hollywood { background: linear-gradient(160deg, #1d4350, #0b0b3b); }
+.poster-Kollywood { background: linear-gradient(160deg, #0f766e, #164e63); }
+.section-kicker { color: #ef9b45; font-size: .7rem; font-weight: 700; letter-spacing: .12em; }
+.movie-section > .row { --bs-gutter-y: 1rem; }
+.movie-card .card-body { gap: .15rem; }
+.movie-card .poster img { transition: transform .3s ease; }
+.movie-card:hover .poster img { transform: scale(1.035); }
 .movie-card .poster { border-radius: .375rem .375rem 0 0; }
 .movie-card { transition: transform .15s ease, box-shadow .15s ease; background: #14141f; }
 .movie-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,.5); }
@@ -17,6 +23,7 @@ body { background: var(--cine-bg); }
 .badge-Tollywood { background: #f7971e; color: #000; }
 .badge-Bollywood { background: #ec008c; }
 .badge-Hollywood { background: #2a9df4; }
+.badge-Kollywood { background: #14b8a6; color: #061b1a; }
 
 /* star input */
 .star-input { display: inline-flex; gap: .15rem; }
