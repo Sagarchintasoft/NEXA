@@ -1,4 +1,4 @@
-# NEXAFILCK - Movie Ticket Booking, Reviews & OTT Search (Django + SQLite)
+# NEXA | NEXAFILCK - Movie Ticket Booking, Reviews & OTT Search (Django + SQLite)
 
 Tollywood, Bollywood and Hollywood movies, 5x8 seat booking, 1-5 star reviews and an OTT streaming search engine.
 
